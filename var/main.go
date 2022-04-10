@@ -3,6 +3,6 @@
 
 package main
 
-import "github.com/rwxrob/cache"
+import "github.com/rwxrob/vars"
 
-func main() { cache.Cmd.Run() }
+func main() { vars.Cmd.Run() }

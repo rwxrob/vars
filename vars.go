@@ -15,7 +15,7 @@ import (
 	_vars "github.com/rwxrob/vars/pkg"
 )
 
-var vars vars.Map
+var vars _vars.Map
 
 func init() {
 	dir, _ := os.UserCacheDir()
@@ -30,7 +30,7 @@ var Cmd = &Z.Cmd{
 
 	Name:      `var`,
 	Summary:   `cache variables in {{ execachedir "vars"}}`,
-	Version:   `v0.2.1`,
+	Version:   `v0.2.2`,
 	Copyright: `Copyright 2021 Robert S Muhlestein`,
 	License:   `Apache-2.0`,
 	Commands:  []*Z.Cmd{help.Cmd, _init, set, get, _file, data, edit},
