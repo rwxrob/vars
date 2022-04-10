@@ -30,7 +30,7 @@ var Cmd = &Z.Cmd{
 
 	Name:      `var`,
 	Summary:   `cache variables in {{ execachedir "vars"}}`,
-	Version:   `v0.0.1`,
+	Version:   `v0.1.0`,
 	Copyright: `Copyright 2021 Robert S Muhlestein`,
 	License:   `Apache-2.0`,
 	Commands:  []*Z.Cmd{help.Cmd, _init, set, get, _file, data, edit},
