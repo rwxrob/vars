@@ -30,7 +30,7 @@ var Cmd = &Z.Cmd{
 
 	Name:      `var`,
 	Summary:   `cache variables in {{ execachedir "vars"}}`,
-	Version:   `v0.2.2`,
+	Version:   `v0.2.3`,
 	Copyright: `Copyright 2021 Robert S Muhlestein`,
 	License:   `Apache-2.0`,
 	Commands:  []*Z.Cmd{help.Cmd, _init, set, get, _file, data, edit},
@@ -77,10 +77,7 @@ var set = &Z.Cmd{
 	MinArgs: 2,
 
 	Call: func(x *Z.Cmd, args ...string) error {
-		path := "."
-		if x.Caller != nil {
-			path = x.Caller.Path()
-		}
+		path := x.Caller.Caller.Path()
 		if path != "." {
 			path += "."
 		}
@@ -101,10 +98,7 @@ var get = &Z.Cmd{
 	//MaxArgs: 1,
 
 	Call: func(x *Z.Cmd, args ...string) error {
-		path := "."
-		if x.Caller != nil {
-			path = x.Caller.Path()
-		}
+		path := x.Caller.Caller.Path()
 		if path != "." {
 			path += "."
 		}
