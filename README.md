@@ -1,6 +1,6 @@
 # 🌳 Go Bonzai™ Cached Variables
 
-[![GoDoc](https://godoc.org/github.com/rwxrob/cache?status.svg)](https://godoc.org/github.com/rwxrob/cache)
+[![GoDoc](https://godoc.org/github.com/rwxrob/vars?status.svg)](https://godoc.org/github.com/rwxrob/vars)
 [![License](https://img.shields.io/badge/license-Apache2-brightgreen.svg)](LICENSE)
 
 ## Install
@@ -11,8 +11,7 @@ Bonzai command tree.
 Standalone
 
 ```
-go install github.com/rwxrob/cache/cache@latest
-alias var=cache
+go install github.com/rwxrob/vars/var@latest
 ```
 
 Composed
@@ -22,12 +21,12 @@ package z
 
 import (
 	Z "github.com/rwxrob/bonzai/z"
-	"github.com/rwxrob/cache"
+	"github.com/rwxrob/vars"
 )
 
 var Cmd = &Z.Cmd{
 	Name:     `z`,
-	Commands: []*Z.Cmd{help.Cmd, cache.Cmd},
+	Commands: []*Z.Cmd{help.Cmd, vars.Cmd},
 }
 ```
 
@@ -38,7 +37,7 @@ To activate bash completion just use the `complete -C` option from your
 completion is done by the program itself.
 
 ```
-complete -C cache cache
+complete -C var var
 ```
 
 If you don't have bash or tab completion check use the shortcut

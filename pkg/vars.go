@@ -1,10 +1,10 @@
 // Copyright 2022 Robert Muhlestein.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package cache provides high-level functions that are called from the
+// Package vars provides high-level functions that are called from the
 // Go Bonzai branch of the same name providing universal access to the
 // core functionality.
-package cache
+package vars
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ type Map struct {
 	M    map[string]string
 	Id   string // usually application name
 	Dir  string // usually os.UserCacheDir
-	File string // usually cache.yaml
+	File string // usually vars
 }
 
 // Map returns a Map with the M initialized. No other initialization is

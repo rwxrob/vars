@@ -1,8 +1,8 @@
 // Copyright 2022 Robert Muhlestein.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package cache provides the Bonzai command branch of the same name.
-package cache
+// Package vars provides the Bonzai command branch of the same name.
+package vars
 
 import (
 	"fmt"
@@ -10,20 +10,20 @@ import (
 	"strings"
 
 	Z "github.com/rwxrob/bonzai/z"
-	cache "github.com/rwxrob/cache/pkg"
 	"github.com/rwxrob/help"
 	"github.com/rwxrob/term"
+	_vars "github.com/rwxrob/vars/pkg"
 )
 
-var _cache cache.Map
+var vars vars.Map
 
 func init() {
 	dir, _ := os.UserCacheDir()
-	_cache = cache.New()
-	_cache.Id = Z.ExeName
-	_cache.Dir = dir
-	_cache.File = `vars`
-	Z.Vars = _cache
+	vars = _vars.New()
+	vars.Id = Z.ExeName
+	vars.Dir = dir
+	vars.File = `vars`
+	Z.Vars = vars
 }
 
 var Cmd = &Z.Cmd{
@@ -46,8 +46,8 @@ var Cmd = &Z.Cmd{
 		the {{ execachedir "vars" }} file.
 
 		Key names are automatically prefixed with the Cmd.Path ('{{ .Path
-		}}' in this case) which changed depending on where this cache (var)
-		branch is composed into the Bonzai command tree.
+		}}' in this case) which changes depending on where this Bonzai
+		branch is composed into your command tree.
 
 		Keys must not include an equal sign (=) which is the only line
 		delimiter.
@@ -67,10 +67,10 @@ var set = &Z.Cmd{
 		The exact process is as follows:
 
     1. Save the current time in nanoseconds
-    2. Load and parse {{ execachefile "vars" }} into cache.Map
+    2. Load and parse {{ execachefile "vars" }} into vars.Map
 		3. Change the specified value
 		4. Check file for changes since saved time, error if changed
-		5. Marshal cache.Map and atomically write to file
+		5. Marshal vars.Map and atomically write to file
 
 		`,
 
@@ -85,15 +85,15 @@ var set = &Z.Cmd{
 			path += "."
 		}
 		val := strings.Join(args[1:], " ")
-		return _cache.Set(path+args[0], val)
+		return vars.Set(path+args[0], val)
 	},
 }
 
 var get = &Z.Cmd{
 	Name:    `get`,
-	Summary: `gets a cached variable and prints with new line`,
+	Summary: `print a cached variable with a new line`,
 	Description: `
-		The *{{.Name}}* command retrieves a cached variable from the cache
+		The *{{.Name}}* command retrieves a cached variable from the vars
 		file ({{execachedir "vars"}}) and prints it with a new line to
 		standard output. Prints a blank line if not set.`,
 
@@ -108,7 +108,7 @@ var get = &Z.Cmd{
 		if path != "." {
 			path += "."
 		}
-		fmt.Println(_cache.Get(path + args[0]))
+		fmt.Println(vars.Get(path + args[0]))
 		return nil
 	},
 }
@@ -116,10 +116,10 @@ var get = &Z.Cmd{
 var _file = &Z.Cmd{
 	Name:     `file`,
 	Aliases:  []string{"f"},
-	Summary:  `outputs full path to the cached variables file`,
+	Summary:  `outputs full path to the cached vars file`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(x *Z.Cmd, _ ...string) error {
-		fmt.Println(_cache.Path())
+		fmt.Println(vars.Path())
 		return nil
 	},
 }
@@ -132,7 +132,7 @@ var _init = &Z.Cmd{
 	ReqVars:  true, // but fulfills at init() above
 	Call: func(x *Z.Cmd, _ ...string) error {
 		if term.IsInteractive() {
-			r := term.Prompt(`Really initialize %v? (y/N) `, _cache.DirPath())
+			r := term.Prompt(`Really initialize %v? (y/N) `, vars.DirPath())
 			if r != "y" {
 				return nil
 			}
@@ -147,8 +147,8 @@ var data = &Z.Cmd{
 	Summary: `outputs contents of the cached variables file`,
 
 	Description: `
-			The *data* command prints the entire, unobfuscated contents of the
-			cached variables file.
+			The *{{.Name}}* command prints the entire, unobfuscated contents
+			of the cached variables file.
 
 			WARNING: Since cached variables regularly includes secrets
 			(tokens, keys, etc.) be aware that anyone able to view your screen
@@ -157,7 +157,7 @@ var data = &Z.Cmd{
 
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(x *Z.Cmd, _ ...string) error {
-		fmt.Print(_cache.Data())
+		fmt.Print(vars.Data())
 		return nil
 	},
 }
@@ -181,5 +181,5 @@ var edit = &Z.Cmd{
 		The edit command hands over control of the currently running process
 		to the editor. `,
 
-	Call: func(x *Z.Cmd, _ ...string) error { return _cache.Edit() },
+	Call: func(x *Z.Cmd, _ ...string) error { return vars.Edit() },
 }

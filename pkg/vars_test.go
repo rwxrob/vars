@@ -1,36 +1,36 @@
-package cache_test
+package vars_test
 
 import (
 	"fmt"
 	"os"
 
-	cache "github.com/rwxrob/cache/pkg"
 	"github.com/rwxrob/fs/file"
+	vars "github.com/rwxrob/vars/pkg"
 )
 
 func ExampleCacheMap() {
-	m := cache.New()
+	m := vars.New()
 	m.Id = `foo`
 	m.Dir = `testdata`
-	m.File = `cache`
+	m.File = `vars`
 	fmt.Println(m.Path())
 	fmt.Println(m.DirPath())
 	// Output:
-	// testdata/foo/cache
+	// testdata/foo/vars
 	// testdata/foo
 }
 
 func ExampleCacheMap_Init() {
 
-	m := cache.New()
+	m := vars.New()
 	m.Id = `foo`
 	m.Dir = `testdata`
-	m.File = `cache`
+	m.File = `vars`
 
 	defer func() { os.RemoveAll(m.DirPath()) }()
 
 	m.Init()
-	fmt.Println(file.Exists(`testdata/foo/cache`))
+	fmt.Println(file.Exists(`testdata/foo/vars`))
 
 	// Output:
 	// true
@@ -38,10 +38,10 @@ func ExampleCacheMap_Init() {
 
 func ExampleCacheMap_Set() {
 
-	m := cache.New()
+	m := vars.New()
 	m.Id = `foo`
 	m.Dir = `testdata`
-	m.File = `cache`
+	m.File = `vars`
 
 	defer func() { os.RemoveAll(m.DirPath()) }()
 
@@ -49,7 +49,7 @@ func ExampleCacheMap_Set() {
 	if err := m.Set("some", "thing\nhere"); err != nil {
 		fmt.Println(err)
 	}
-	byt, _ := os.ReadFile(`testdata/foo/cache`)
+	byt, _ := os.ReadFile(`testdata/foo/vars`)
 	fmt.Println(string(byt) == `some=thing\nhere`+"\n")
 
 	// Output:
@@ -58,10 +58,10 @@ func ExampleCacheMap_Set() {
 
 func ExampleCacheMap_Get() {
 
-	m := cache.New()
+	m := vars.New()
 	m.Id = `foo`
 	m.Dir = `testdata`
-	m.File = `cache`
+	m.File = `vars`
 
 	defer func() { os.RemoveAll(m.DirPath()) }()
 
@@ -82,7 +82,7 @@ some=thing here
 another=one over here
 `
 
-	m := cache.New()
+	m := vars.New()
 	m.UnmarshalText([]byte(in))
 	fmt.Println(len(m.M))
 	fmt.Println(m.M["some"])
@@ -96,7 +96,7 @@ another=one over here
 
 func ExampleCacheMap_MarshalText() {
 
-	m := cache.New()
+	m := vars.New()
 	m.M["some"] = "thing here"
 	m.M["another"] = "one\rhere\nbut all good"
 
