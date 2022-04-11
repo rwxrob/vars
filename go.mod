@@ -4,11 +4,11 @@ go 1.18
 
 require (
 	github.com/rogpeppe/go-internal v1.8.1
-	github.com/rwxrob/bonzai v0.6.0
+	github.com/rwxrob/bonzai v0.7.0
 	github.com/rwxrob/fs v0.5.0
-	github.com/rwxrob/help v0.3.0
+	github.com/rwxrob/help v0.3.1
 	github.com/rwxrob/term v0.2.6
-	github.com/rwxrob/to v0.5.1
+	github.com/rwxrob/to v0.5.2
 )
 
 require (
