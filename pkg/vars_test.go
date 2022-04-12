@@ -8,7 +8,7 @@ import (
 	vars "github.com/rwxrob/vars/pkg"
 )
 
-func ExampleCacheMap() {
+func ExampleVars() {
 	m := vars.New()
 	m.Id = `foo`
 	m.Dir = `testdata`
@@ -20,7 +20,7 @@ func ExampleCacheMap() {
 	// testdata/foo
 }
 
-func ExampleCacheMap_Init() {
+func ExampleVars_Init() {
 
 	m := vars.New()
 	m.Id = `foo`
@@ -36,7 +36,7 @@ func ExampleCacheMap_Init() {
 	// true
 }
 
-func ExampleCacheMap_Set() {
+func ExampleVars_Set() {
 
 	m := vars.New()
 	m.Id = `foo`
@@ -56,7 +56,7 @@ func ExampleCacheMap_Set() {
 	// true
 }
 
-func ExampleCacheMap_Get() {
+func ExampleVars_Get() {
 
 	m := vars.New()
 	m.Id = `foo`
@@ -75,7 +75,7 @@ func ExampleCacheMap_Get() {
 	// "thing\nhere"
 }
 
-func ExampleCacheMap_UnmarshalText() {
+func ExampleVars_UnmarshalText() {
 
 	in := `
 some=thing here
@@ -94,7 +94,7 @@ another=one over here
 	// one over here
 }
 
-func ExampleCacheMap_MarshalText() {
+func ExampleVars_MarshalText() {
 
 	m := vars.New()
 	m.M["some"] = "thing here"

@@ -65,7 +65,7 @@ func (c Map) Path() string { return filepath.Join(c.Dir, c.Id, c.File) }
 // would need to cache in order to operate is appropriate (cookies,
 // session tokens, etc.).
 //
-// Fulfills the bonzai.CacheMap interface.
+// Fulfills the bonzai.Vars interface.
 func (c Map) Init() error {
 	d := c.DirPath()
 
@@ -93,7 +93,7 @@ func (c Map) Init() error {
 // Data returns the cache data in text marshaled format: k=v, no equal
 // sign in key, carriage return and line returns escaped, terminated by
 // line return on each line. Logs an error if source of data is
-// unavailable. Fulfills the bonzai.CacheMap interface.
+// unavailable. Fulfills the bonzai.Vars interface.
 func (m Map) Data() string {
 	byt, err := os.ReadFile(m.Path())
 	if err != nil {
@@ -103,11 +103,11 @@ func (m Map) Data() string {
 }
 
 // Print prints the text version of the cache. See Data for format.
-// Fulfills the bonzai.CacheMap interface.
+// Fulfills the bonzai.Vars interface.
 func (m Map) Print() { fmt.Print(m.Data()) }
 
 // Get returns a value from the persisted cache (if it has one). No
-// locking is done.  Fulfills the bonzai.CacheMap interface.
+// locking is done.  Fulfills the bonzai.Vars interface.
 func (m Map) Get(key string) string {
 	m.Load()
 	val, _ := m.M[key]
@@ -115,7 +115,7 @@ func (m Map) Get(key string) string {
 }
 
 // Set sets a persistent variable in the cache or returns an error if
-// not. Fulfills the bonzai.CacheMap interface.
+// not. Fulfills the bonzai.Vars interface.
 func (m Map) Set(key, val string) error {
 	path := m.Path()
 	mod := fs.ModTime(path)
@@ -145,7 +145,7 @@ func (m Map) Set(key, val string) error {
 }
 
 // Del deletes an entry from the persistent cache. Fulfills the
-// bonzai.CacheMap interface.
+// bonzai.Vars interface.
 func (m Map) Del(key string) {
 	if err := m.Load(); err != nil {
 		delete(m.M, key)
