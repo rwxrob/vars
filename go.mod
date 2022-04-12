@@ -6,13 +6,13 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1
 	github.com/rwxrob/bonzai v0.9.0
 	github.com/rwxrob/fs v0.5.0
-	github.com/rwxrob/help v0.3.2
+	github.com/rwxrob/help v0.3.3
 	github.com/rwxrob/term v0.2.6
 	github.com/rwxrob/to v0.5.2
 )
 
 require (
-	github.com/rwxrob/compcmd v0.1.2 // indirect
+	github.com/rwxrob/compcmd v0.1.4 // indirect
 	github.com/rwxrob/fn v0.3.3 // indirect
 	github.com/rwxrob/scan v0.6.1 // indirect
 	github.com/rwxrob/structs v0.5.1 // indirect
