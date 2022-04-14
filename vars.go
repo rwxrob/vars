@@ -114,7 +114,7 @@ var _init = &Z.Cmd{
 	Aliases:  []string{"i"},
 	Summary:  `(re)initializes current variable cache`,
 	Commands: []*Z.Cmd{help.Cmd},
-	ReqVars:  true, // but fulfills at init() above
+	UseVars:  true, // but fulfills at init() above
 	Call: func(x *Z.Cmd, _ ...string) error {
 		if term.IsInteractive() {
 			r := term.Prompt(`Really initialize %v? (y/N) `, vars.DirPath())
