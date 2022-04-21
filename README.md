@@ -11,7 +11,7 @@ Bonzai command tree.
 Standalone
 
 ```
-go install github.com/rwxrob/vars/var@latest
+go install github.com/rwxrob/vars/cmd/var@latest
 ```
 
 Composed
