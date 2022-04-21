@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/rogpeppe/go-internal v1.8.1
-	github.com/rwxrob/bonzai v0.10.1
-	github.com/rwxrob/fs v0.5.0
-	github.com/rwxrob/help v0.3.6
+	github.com/rwxrob/bonzai v0.11.1
+	github.com/rwxrob/fs v0.5.1
+	github.com/rwxrob/help v0.3.8
 	github.com/rwxrob/term v0.2.6
 	github.com/rwxrob/to v0.5.2
 )

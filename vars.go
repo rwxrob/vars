@@ -1,170 +1,238 @@
 // Copyright 2022 Robert Muhlestein.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package vars provides the Bonzai command branch of the same name.
+// Package vars provides high-level functions that are called from the
+// Go Bonzai branch of the same name providing universal access to the
+// core functionality.
 package vars
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 
-	Z "github.com/rwxrob/bonzai/z"
-	"github.com/rwxrob/help"
-	"github.com/rwxrob/term"
-	_vars "github.com/rwxrob/vars/pkg"
+	_fs "io/fs"
+
+	"github.com/rogpeppe/go-internal/lockedfile"
+	"github.com/rwxrob/fs"
+	"github.com/rwxrob/fs/dir"
+	"github.com/rwxrob/fs/file"
+	"github.com/rwxrob/to"
 )
 
-var vars _vars.Map
+var BlankLine = regexp.MustCompile(`^[ \t\r\n]*$`)
 
-func init() {
-	dir, _ := os.UserCacheDir()
-	vars = _vars.New()
-	vars.Id = Z.ExeName
-	vars.Dir = dir
-	vars.File = `vars`
-	Z.Vars = vars
+type Map struct {
+	sync.Mutex
+	M    map[string]string
+	Id   string // usually application name
+	Dir  string // usually os.UserCacheDir
+	File string // usually vars
 }
 
-var Cmd = &Z.Cmd{
-
-	Name:      `var`,
-	Summary:   `cache variables in {{ execachedir "vars"}}`,
-	Version:   `v0.2.8`,
-	Copyright: `Copyright 2021 Robert S Muhlestein`,
-	License:   `Apache-2.0`,
-	Commands:  []*Z.Cmd{help.Cmd, _init, set, get, _file, data, edit},
-
-	Description: `
-		The *{{.Name}}* command provides a cross-platform, persistent
-		alternative to environment/system variables. The subcommands are
-		designed to be safe and convenient.
-
-		Implementation
-
-		Variables are cached as key=val (property) pairs, one to a line, in
-		the {{ execachedir "vars" }} file.
-
-		Key names are automatically prefixed with the Cmd.Path ('{{ .Path
-		}}' in this case) which changes depending on where this Bonzai
-		branch is composed into your command tree.
-
-		Keys must not include an equal sign (=) which is the only line
-		delimiter.
-
-		Carriage returns (\r) and line returns (\n) are escaped
-		and each line is terminated with a line return (\n).`}
-
-var set = &Z.Cmd{
-	Name:    `set`,
-	Summary: `safely sets (persists) a cached variable`,
-	Description: `
-		The *{{.Name}}* command writes the changes to the specified cached
-		variable in a way that is reasonably safe for system-wide concurrent
-		writes by checking the file for any changes since last right and
-		refusing to overwrite if so (much like editing from a Vim session).
-
-		The exact process is as follows:
-
-    1. Save the current time in nanoseconds
-    2. Load and parse {{ execachefile "vars" }} into vars.Map
-		3. Change the specified value
-		4. Check file for changes since saved time, error if changed
-		5. Marshal vars.Map and atomically write to file
-
-		`,
-
-	MinArgs: 2,
-
-	Call: func(x *Z.Cmd, args ...string) error {
-		return x.Caller.Caller.Set(args[0], strings.Join(args[1:], " "))
-	},
+// Map returns a Map with the M initialized. No other initialization is
+// performed. See Init.
+func New() Map {
+	m := Map{}
+	m.M = map[string]string{}
+	return m
 }
 
-var get = &Z.Cmd{
-	Name:    `get`,
-	Summary: `print a cached variable with a new line`,
-	Description: `
-		The *{{.Name}}* command retrieves a cached variable from the vars
-		file ({{execachedir "vars"}}) and prints it with a new line to
-		standard output. Prints a blank line if not set.`,
+// DirPath is the Dir and Id joined.
+func (c Map) DirPath() string { return filepath.Join(c.Dir, c.Id) }
 
-	MinArgs: 1,
-	//MaxArgs: 1,
+// Path returns the combined Dir and File.
+func (c Map) Path() string { return filepath.Join(c.Dir, c.Id, c.File) }
 
-	Call: func(x *Z.Cmd, args ...string) error {
-		fmt.Println(x.Caller.Caller.Get(args[0]))
-		return nil
-	},
-}
+// Init initializes the cache directory (Dir) for the current user and
+// given application name (Id) using the standard os.UserCacheDir
+// location.  The directory is completely removed and new configuration
+// file(s) are created.
+//
+// Consider placing a confirmation prompt before calling this function
+// when term.IsInteractive is true. Since Init uses fs/{dir,file}.Create
+// you can set the file.DefaultPerms and dir.DefaultPerms if you prefer
+// a different default for your permissions.
+//
+// Permissions in the fs package are restrictive (0700/0600) by default
+// to  allow tokens to be stored within configuration files (as other
+// applications are known to do). Still, saving of critical secrets is
+// not encouraged within any flat file. But anything that a web browser
+// would need to cache in order to operate is appropriate (cookies,
+// session tokens, etc.).
+//
+// Fulfills the bonzai.Vars interface.
+func (c Map) Init() error {
+	d := c.DirPath()
 
-var _file = &Z.Cmd{
-	Name:     `file`,
-	Aliases:  []string{"f"},
-	Summary:  `outputs full path to the cached vars file`,
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(x *Z.Cmd, _ ...string) error {
-		fmt.Println(vars.Path())
-		return nil
-	},
-}
+	// safety checks before blowing things away
+	if d == "" {
+		return fmt.Errorf("could not resolve cache path for %q", c.Id)
+	}
+	if len(c.Id) == 0 && len(c.Dir) == 0 {
+		return fmt.Errorf("empty directory id")
+	}
 
-var _init = &Z.Cmd{
-	Name:     `init`,
-	Aliases:  []string{"i"},
-	Summary:  `(re)initializes current variable cache`,
-	Commands: []*Z.Cmd{help.Cmd},
-	UseVars:  true, // but fulfills at init() above
-	Call: func(x *Z.Cmd, _ ...string) error {
-		if term.IsInteractive() {
-			r := term.Prompt(`Really initialize %v? (y/N) `, vars.DirPath())
-			if r != "y" {
-				return nil
-			}
+	if fs.Exists(d) {
+		if err := os.RemoveAll(d); err != nil {
+			return err
 		}
-		return Z.Vars.Init()
-	},
+	}
+
+	if err := dir.Create(d); err != nil {
+		return err
+	}
+
+	return file.Touch(c.Path())
 }
 
-var data = &Z.Cmd{
-	Name:    `data`,
-	Aliases: []string{"d"},
-	Summary: `outputs contents of the cached variables file`,
-
-	Description: `
-			The *{{.Name}}* command prints the entire, unobfuscated contents
-			of the cached variables file.
-
-			WARNING: Since cached variables regularly includes secrets
-			(tokens, keys, etc.) be aware that anyone able to view your screen
-			could compromise your security when using this command in front of
-			them (presentations, streaming, etc.).`,
-
-	Commands: []*Z.Cmd{help.Cmd},
-	Call: func(x *Z.Cmd, _ ...string) error {
-		fmt.Print(vars.Data())
-		return nil
-	},
+// Data returns the cache data in text marshaled format: k=v, no equal
+// sign in key, carriage return and line returns escaped, terminated by
+// line return on each line. Logs an error if source of data is
+// unavailable. Fulfills the bonzai.Vars interface.
+func (m Map) Data() string {
+	byt, err := os.ReadFile(m.Path())
+	if err != nil {
+		log.Print(err)
+	}
+	return string(byt)
 }
 
-var edit = &Z.Cmd{
-	Name:     `edit`,
-	Summary:  `edit variables file ({{execachedir "vars"}}) `,
-	Aliases:  []string{"e"},
-	Commands: []*Z.Cmd{help.Cmd},
+// Print prints the text version of the cache. See Data for format.
+// Fulfills the bonzai.Vars interface.
+func (m Map) Print() { fmt.Print(m.Data()) }
 
-	Description: `
-		The *{{.Name}}* command will the configuration file for editing in
-		the currently configured editor (in order or priority):
+// Get returns a value from the persisted cache (if it has one). No
+// locking is done.  Fulfills the bonzai.Vars interface.
+func (m Map) Get(key string) string {
+	m.Load()
+	val, _ := m.M[key]
+	return val
+}
 
-		* $VISUAL
-		* $EDITOR
-		* vi
-		* vim
-		* nano
+// Set sets a persistent variable in the cache or returns an error if
+// not. Fulfills the bonzai.Vars interface.
+func (m Map) Set(key, val string) error {
+	path := m.Path()
+	mod := fs.ModTime(path)
+	if mod.IsZero() {
+		return fmt.Errorf("failed to read mod time on file: %q", path)
+	}
+	if err := m.Load(); err != nil {
+		return err
+	}
+	nmod := fs.ModTime(path)
+	if mod.IsZero() {
+		return fmt.Errorf("failed to read mod time on file: %q", path)
+	}
+	if nmod.After(mod) {
+		return fmt.Errorf("file has changed since read: %q", path)
+	}
+	prev, has := m.M[key]
+	if has {
+		defer func() { m.M[key] = prev }()
+	}
+	m.M[key] = val
+	text, err := m.MarshalText()
+	if err != nil {
+		return err
+	}
+	return m.OverWrite(string(text))
+}
 
-		The edit command hands over control of the currently running process
-		to the editor. `,
+// Del deletes an entry from the persistent cache. Fulfills the
+// bonzai.Vars interface.
+func (m Map) Del(key string) {
+	if err := m.Load(); err != nil {
+		delete(m.M, key)
+		m.Save()
+	}
+}
 
-	Call: func(x *Z.Cmd, _ ...string) error { return vars.Edit() },
+// Loads the latest from File and Unmarshals into M.
+func (m *Map) Load() error {
+	return m.UnmarshalText([]byte(m.Data()))
+}
+
+// Save persists the current map to file. See OverWrite.
+func (m *Map) Save() error {
+	byt, err := m.MarshalText()
+	if err != nil {
+		return err
+	}
+	return m.OverWrite(string(byt))
+}
+
+func (c Map) mkdir() error {
+	d := c.DirPath()
+	if d == "" {
+		return fmt.Errorf("failed to find config for %q", c.Id)
+	}
+	if fs.NotExists(d) {
+		if err := dir.Create(d); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// OverWrite overwrites the cache File in a way that is safe for all
+// callers of OverWrite in this current system for any operating system
+// using go-internal/lockedfile (taken from the to internal project
+// itself, https://github.com/golang/go/issues/33974) but applying the
+// file.DefaultPerms instead of the 0666 Go default.
+// The format of the cache string must be key:value with carriage
+// returns and line returns escaped. No colons are allowed in the
+// key. Each line must be terminated with a single line return.
+func (c Map) OverWrite(with string) error {
+	if err := c.mkdir(); err != nil {
+		return err
+	}
+	return lockedfile.Write(c.Path(),
+		strings.NewReader(with), _fs.FileMode(file.DefaultPerms))
+}
+
+// MarshalText fulfills encoding.TextMarshaler interface
+func (c Map) MarshalText() ([]byte, error) {
+	c.Lock()
+	defer c.Unlock()
+	var out string
+	for k, v := range c.M {
+		out += k + "=" + to.EscReturns(v) + "\n"
+	}
+	return []byte(out), nil
+}
+
+// UnmarshalText fulfills encoding.TextUnmarshaler interface
+func (c *Map) UnmarshalText(in []byte) error {
+	c.Lock()
+	defer c.Unlock()
+	lines := to.Lines(string(in))
+	for _, line := range lines {
+		if BlankLine.MatchString(line) {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			c.M[parts[0]] = to.UnEscReturns(parts[1])
+		}
+	}
+	return nil
+}
+
+// Edit opens the given cached variables files in the local editor. See
+// fs/file.Edit for more.
+func (c Map) Edit() error {
+	if err := c.mkdir(); err != nil {
+		return err
+	}
+	path := c.Path()
+	if path == "" {
+		return fmt.Errorf("unable to locate cache vars for %q", c.Id)
+	}
+	return file.Edit(path)
 }

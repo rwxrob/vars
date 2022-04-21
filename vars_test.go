@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/rwxrob/fs/file"
-	vars "github.com/rwxrob/vars/pkg"
+	"github.com/rwxrob/vars"
 )
 
 func ExampleVars() {
