@@ -32,7 +32,10 @@ var Cmd = &Z.Cmd{
 	Version:   `v0.3.2`,
 	Copyright: `Copyright 2021 Robert S Muhlestein`,
 	License:   `Apache-2.0`,
-	Commands:  []*Z.Cmd{help.Cmd, _init, set, get, _file, data, edit},
+	Commands: []*Z.Cmd{
+		getCmd,
+		help.Cmd, initCmd, setCmd, fileCmd, dataCmd, editCmd,
+	},
 
 	Description: `
 		The *{{.Name}}* command provides a cross-platform, persistent
@@ -54,7 +57,7 @@ var Cmd = &Z.Cmd{
 		Carriage returns (\r) and line returns (\n) are escaped
 		and each line is terminated with a line return (\n).`}
 
-var set = &Z.Cmd{
+var setCmd = &Z.Cmd{
 	Name:    `set`,
 	Summary: `safely sets (persists) a cached variable`,
 	Description: `
@@ -80,7 +83,7 @@ var set = &Z.Cmd{
 	},
 }
 
-var get = &Z.Cmd{
+var getCmd = &Z.Cmd{
 	Name:    `get`,
 	Summary: `print a cached variable with a new line`,
 	Description: `
@@ -88,16 +91,19 @@ var get = &Z.Cmd{
 		file ({{execachedir "vars"}}) and prints it with a new line to
 		standard output. Prints a blank line if not set.`,
 
-	MinArgs: 1,
-	//MaxArgs: 1,
+	NumArgs: 1,
 
 	Call: func(x *Z.Cmd, args ...string) error {
-		fmt.Println(x.Caller.Caller.Get(args[0]))
+		val, err := x.Caller.Caller.Get(args[0])
+		if err != nil {
+			return err
+		}
+		term.Print(val)
 		return nil
 	},
 }
 
-var _file = &Z.Cmd{
+var fileCmd = &Z.Cmd{
 	Name:     `file`,
 	Aliases:  []string{"f"},
 	Summary:  `outputs full path to the cached vars file`,
@@ -108,7 +114,7 @@ var _file = &Z.Cmd{
 	},
 }
 
-var _init = &Z.Cmd{
+var initCmd = &Z.Cmd{
 	Name:     `init`,
 	Aliases:  []string{"i"},
 	Summary:  `(re)initializes current variable cache`,
@@ -125,7 +131,7 @@ var _init = &Z.Cmd{
 	},
 }
 
-var data = &Z.Cmd{
+var dataCmd = &Z.Cmd{
 	Name:    `data`,
 	Aliases: []string{"d"},
 	Summary: `outputs contents of the cached variables file`,
@@ -146,7 +152,7 @@ var data = &Z.Cmd{
 	},
 }
 
-var edit = &Z.Cmd{
+var editCmd = &Z.Cmd{
 	Name:     `edit`,
 	Summary:  `edit variables file ({{execachedir "vars"}}) `,
 	Aliases:  []string{"e"},

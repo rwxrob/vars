@@ -90,6 +90,19 @@ func (c Map) Init() error {
 	return file.Touch(c.Path())
 }
 
+// Exists returns true if a configuration file exists at Path.
+func (c Map) Exists() bool {
+	return file.Exists(c.Path())
+}
+
+// SoftInit calls Init if not Exists.
+func (c Map) SoftInit() error {
+	if !c.Exists() {
+		return c.Init()
+	}
+	return nil
+}
+
 // Data returns the cache data in text marshaled format: k=v, no equal
 // sign in key, carriage return and line returns escaped, terminated by
 // line return on each line. Logs an error if source of data is
