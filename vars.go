@@ -159,11 +159,12 @@ func (m Map) Set(key, val string) error {
 
 // Del deletes an entry from the persistent cache. Fulfills the
 // bonzai.Vars interface.
-func (m Map) Del(key string) {
+func (m Map) Del(key string) error {
 	if err := m.Load(); err != nil {
-		delete(m.M, key)
-		m.Save()
+		return err
 	}
+	delete(m.M, key)
+	return m.Save()
 }
 
 // Loads the latest from File and Unmarshals into M.

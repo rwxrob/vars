@@ -33,8 +33,8 @@ var Cmd = &Z.Cmd{
 	Copyright: `Copyright 2021 Robert S Muhlestein`,
 	License:   `Apache-2.0`,
 	Commands: []*Z.Cmd{
-		getCmd,
-		help.Cmd, initCmd, setCmd, fileCmd, dataCmd, editCmd,
+		getCmd, // default
+		help.Cmd, initCmd, setCmd, fileCmd, dataCmd, editCmd, deleteCmd,
 	},
 
 	Description: `
@@ -58,34 +58,60 @@ var Cmd = &Z.Cmd{
 		and each line is terminated with a line return (\n).`}
 
 var setCmd = &Z.Cmd{
-	Name:    `set`,
-	Summary: `safely sets (persists) a cached variable`,
+	Name:     `set`,
+	Summary:  `safely sets (persists) a cached variable`,
+	Usage:    `(help|<name>) [<args>...]`,
+	Commands: []*Z.Cmd{help.Cmd},
 	Description: `
 		The *{{.Name}}* command writes the changes to the specified cached
 		variable in a way that is reasonably safe for system-wide concurrent
 		writes by checking the file for any changes since last right and
 		refusing to overwrite if so (much like editing from a Vim session).
+		If no name is passed will throw an error. If no new value arguments
+		are passed will behave as if {{cmd "get"}} was called instead.
 
 		The exact process is as follows:
 
-    1. Save the current time in nanoseconds
-    2. Load and parse {{ execachefile "vars" }} into vars.Map
+		1. Save the current time in nanoseconds
+		2. Load and parse {{ execachefile "vars" }} into vars.Map
 		3. Change the specified value
 		4. Check file for changes since saved time, error if changed
 		5. Marshal vars.Map and atomically write to file
 
+		Multiple Argument Fields Joined with Space
+
+		In UNIX tradition, multiple arguments are assumed to be a part of
+		a single string argument to be joined with spaces. This saves users
+		from having to quote everything when it is not needed.
+
+		After setting the value, the new value is printed as if the {{cmd
+		"get"}} was called.
+
 		`,
 
-	MinArgs: 2,
+	MinArgs: 1,
 
 	Call: func(x *Z.Cmd, args ...string) error {
-		return x.Caller.Caller.Set(args[0], strings.Join(args[1:], " "))
+		var val string
+		if len(args) > 1 {
+			val = strings.Join(args[1:], " ")
+		}
+		if err := x.Caller.Caller.Set(args[0], val); err != nil {
+			return err
+		}
+		nval, err := x.Caller.Caller.Get(args[0])
+		if err != nil {
+			return err
+		}
+		term.Print(nval)
+		return nil
 	},
 }
 
 var getCmd = &Z.Cmd{
-	Name:    `get`,
-	Summary: `print a cached variable with a new line`,
+	Name:     `get`,
+	Summary:  `print a cached variable with a new line`,
+	Commands: []*Z.Cmd{help.Cmd},
 	Description: `
 		The *{{.Name}}* command retrieves a cached variable from the vars
 		file ({{execachedir "vars"}}) and prints it with a new line to
@@ -109,7 +135,7 @@ var fileCmd = &Z.Cmd{
 	Summary:  `outputs full path to the cached vars file`,
 	Commands: []*Z.Cmd{help.Cmd},
 	Call: func(x *Z.Cmd, _ ...string) error {
-		fmt.Println(vars.Path())
+		term.Print(vars.Path())
 		return nil
 	},
 }
@@ -172,4 +198,21 @@ var editCmd = &Z.Cmd{
 		to the editor. `,
 
 	Call: func(x *Z.Cmd, _ ...string) error { return vars.Edit() },
+}
+
+var deleteCmd = &Z.Cmd{
+	Name:     `delete`,
+	Aliases:  []string{`clear`, `cl`, `rm`, `remove`, `d`, `del`},
+	Summary:  `delete variable(s) from cache`,
+	Usage:    `(help|<name>...)`,
+	Commands: []*Z.Cmd{help.Cmd},
+	MinArgs:  1,
+	Description: `
+		The *{{.Name}}* command will delete the specified variable from cache.`,
+	Call: func(x *Z.Cmd, args ...string) error {
+		for _, i := range args {
+			vars.Del(x.Caller.Caller.Path(i))
+		}
+		return nil
+	},
 }
