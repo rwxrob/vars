@@ -202,7 +202,7 @@ var editCmd = &Z.Cmd{
 
 var deleteCmd = &Z.Cmd{
 	Name:     `delete`,
-	Aliases:  []string{`clear`, `cl`, `rm`, `remove`, `d`, `del`},
+	Aliases:  []string{`d`, `del`},
 	Summary:  `delete variable(s) from cache`,
 	Usage:    `(help|<name>...)`,
 	Commands: []*Z.Cmd{help.Cmd},
