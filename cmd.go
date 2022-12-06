@@ -17,7 +17,7 @@ import (
 var vars Map
 
 func init() {
-	dir, _ := os.UserCacheDir()
+	dir, _ := os.UserConfigDir()
 	vars = New()
 	vars.Id = Z.ExeName
 	vars.Dir = dir
