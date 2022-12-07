@@ -18,7 +18,7 @@ import (
 var vars Map
 
 func init() {
-	dir, _ := os.UserConfigDir()
+	dir, _ := os.UserCacheDir()
 	vars = New()
 	vars.Id = Z.ExeName
 	vars.Dir = dir
@@ -33,7 +33,7 @@ var Cmd = &Z.Cmd{
 	Name:        `var`,
 	Summary:     `cache variables in {{ execachedir "vars"}}`,
 	Description: helpDoc,
-	Version:     `v0.6.1`,
+	Version:     `v0.6.2`,
 	Copyright:   `Copyright 2021 Robert S Muhlestein`,
 	License:     `Apache-2.0`,
 	Source:      `git@github.com:rwxrob/vars.git`,
