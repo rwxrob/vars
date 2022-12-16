@@ -33,7 +33,7 @@ var Cmd = &Z.Cmd{
 	Name:        `var`,
 	Summary:     `cache variables in {{ execachedir "vars"}}`,
 	Description: helpDoc,
-	Version:     `v0.6.2`,
+	Version:     `v0.6.3`,
 	Copyright:   `Copyright 2021 Robert S Muhlestein`,
 	License:     `Apache-2.0`,
 	Source:      `git@github.com:rwxrob/vars.git`,
@@ -153,7 +153,7 @@ var editCmd = &Z.Cmd{
 
 var deleteCmd = &Z.Cmd{
 	Name:        `delete`,
-	Aliases:     []string{`d`, `del`},
+	Aliases:     []string{`d`, `del`, `unset`},
 	Summary:     `delete variable(s) from cache`,
 	Usage:       `(help|<name>...)`,
 	Commands:    []*Z.Cmd{help.Cmd},
