@@ -33,7 +33,7 @@ var Cmd = &Z.Cmd{
 	Name:        `var`,
 	Summary:     `cache variables in {{ execachedir "vars"}}`,
 	Description: helpDoc,
-	Version:     `v0.6.3`,
+	Version:     `v0.6.4`,
 	Copyright:   `Copyright 2021 Robert S Muhlestein`,
 	License:     `Apache-2.0`,
 	Source:      `git@github.com:rwxrob/vars.git`,
@@ -41,34 +41,6 @@ var Cmd = &Z.Cmd{
 	Commands: []*Z.Cmd{
 		getCmd, // default
 		help.Cmd, initCmd, setCmd, fileCmd, dataCmd, editCmd, deleteCmd,
-	},
-}
-
-//go:embed set.md
-var setDoc string
-
-var setCmd = &Z.Cmd{
-	Name:        `set`,
-	Summary:     `safely sets (persists) a cached variable`,
-	Usage:       `(help|<name>) [<args>...]`,
-	Description: setDoc,
-	Commands:    []*Z.Cmd{help.Cmd},
-	MinArgs:     1,
-
-	Call: func(x *Z.Cmd, args ...string) error {
-		var val string
-		if len(args) > 1 {
-			val = strings.Join(args[1:], " ")
-		}
-		if err := x.Caller.Caller.Set(args[0], val); err != nil {
-			return err
-		}
-		nval, err := x.Caller.Caller.Get(args[0])
-		if err != nil {
-			return err
-		}
-		term.Print(nval)
-		return nil
 	},
 }
 
@@ -91,6 +63,28 @@ var getCmd = &Z.Cmd{
 		return nil
 	},
 }
+
+var setCmd = &Z.Cmd{
+	Name:        `set`,
+	Summary:     `safely sets (persists) a cached variable`,
+	Usage:       `(help|<name>) [<args>...]`,
+	Description: setDoc,
+	Commands:    []*Z.Cmd{help.Cmd},
+	MinArgs:     1,
+
+	Call: func(x *Z.Cmd, args ...string) error {
+		if len(args) > 1 {
+			val := strings.Join(args[1:], " ")
+			if err := x.Caller.Caller.Set(args[0], val); err != nil {
+				return err
+			}
+		}
+		return getCmd.Call(x, args[0])
+	},
+}
+
+//go:embed set.md
+var setDoc string
 
 var fileCmd = &Z.Cmd{
 	Name:     `file`,
